@@ -30,6 +30,7 @@ var puzzle_x, puzzle_y, puzzle_width, puzzle_height;
 var scale_factor;
 
 var pieces;
+var piece_count;
 var image;
 
 function Piece(x, y, width, height, src_x, src_y, src_width, src_height,
@@ -55,12 +56,10 @@ function draw_scene() {
 	canvas.height = window.innerHeight;
 	ctx.fillStyle = '#ffffff';
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
-	for (i = 0; i < rows; i++) {
-		for (j = 0; j < cols; j++) {
-			var p = pieces[i][j];
-			ctx.drawImage(image, p.src_x, p.src_y, p.src_width, p.src_height,
-				p.x, p.y, p.width, p.height);
-		}
+	for (i = 0; i < piece_count; i++) {
+		var p = pieces[i];
+		ctx.drawImage(image, p.src_x, p.src_y, p.src_width, p.src_height,
+			p.x, p.y, p.width, p.height);
 	}
 }
 
@@ -88,7 +87,7 @@ function run() {
 	image.onload = function() {
 		var canvas_width = window.innerWidth;
 		var canvas_height = window.innerHeight;
-		var i, j;
+		var i, j, n;
 		var x, y, width, height, src_x, src_y, src_width, src_height;
 		var p;
 
@@ -111,28 +110,28 @@ function run() {
 			+ "Puzzle width: " + puzzle_width + "\n"
 			+ "Puzzle height: " + puzzle_height + "\n");
 
-		pieces = new Array(rows);
+		pieces = [];
+		n = 0;
 		for (i = 0; i < rows; i++) {
 			y = Math.floor(i*puzzle_height/rows);
 			height = Math.floor((i+1)*puzzle_height/rows) - y;
 			src_y = Math.floor(i*this.height/rows);
 			src_height = Math.floor((i+1)*this.height/rows) - src_y;
 
-			pieces[i] = new Array(cols);
 			for (j = 0; j < cols; j++) {
 				x = Math.floor(j*puzzle_width/cols);
 				width = Math.floor((j+1)*puzzle_width/cols) - x;
 				src_x = Math.floor(j*this.width/cols);
 				src_width = Math.floor((j+1)*this.width/cols) - src_x;
 				
-				pieces[i][j] = new Piece(
+				pieces.push(new Piece(
 					puzzle_x+x, puzzle_y+y,
 					width, height,
 					src_x, src_y,
 					src_width, src_height,
-					puzzle_x+x, puzzle_y+y);
-				p = pieces[i][j];
-				console.log("puzzle[" + i + "][" + j + "]:\n"
+					puzzle_x+x, puzzle_y+y));
+				p = pieces[n];
+				console.log("puzzle[" + n + "]:\n"
 					+ "x: " + p.x + "\n"
 					+ "y: " + p.y + "\n"
 					+ "width: " + p.width + "\n"
@@ -143,8 +142,10 @@ function run() {
 					+ "src_height: " + p.src_height + "\n"
 					+ "goal_x: " + p.goal_x + "\n"
 					+ "goal_y: " + p.goal_y + "\n");
+				n++;
 			}
 		}
+		piece_count = rows*cols;
 
 		draw_scene();
 	}
