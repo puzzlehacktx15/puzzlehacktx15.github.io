@@ -17,11 +17,41 @@ function parse_urls() {
 	return params;
 }
 
+(function() {
+	var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+		window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+	window.requestAnimationFrame = requestAnimationFrame;
+})();
+
+var canvas;
+var context;
+
+function draw_scene() {
+	window.requestAnimationFrame(draw_scene);
+	var num = Math.round(127 + 127*Math.sin(2*Math.PI*Date.now()/1000/2));
+	if (num < 0) num = 0;
+	else if (num > 255) num = 255;
+	if (num <= 15)
+		string = '0' + num.toString(16);
+	else
+		string = num.toString(16);
+	canvas.style.background = '#' + string + '0000';
+}
+
 function run() {
+	window.requestAnimationFrame =
+		window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+		window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+	canvas = document.getElementById('canvas');
+	context = canvas.getContext('2d');
+
 	params = parse_urls();
 	if (typeof params['img'] !== 'undefined') {
 		alert('img: ' + params['img']);
 	}
+
+	draw_scene();
 }
 </script>
 <style>
@@ -41,7 +71,7 @@ html, body {
 </head>
 <body onload="run();">
 <div>
-<canvas id="canvas"></canvas>
+<canvas id="canvas" width="1366" height="768"></canvas>
 </div>
 </body>
 </html>
