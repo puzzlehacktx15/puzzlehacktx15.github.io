@@ -2,7 +2,8 @@
 <html lang="en-US">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="user-scalable=no"/>
+<meta name="viewport"
+	content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Puzzle HackTX 15</title>
 <!-- License: Public domain -->
 <script>
@@ -133,27 +134,29 @@ function draw_scene() {
 }
 
 function mouseover(e) {
-	var x = e.clientX, y = e.clientY;
+	var x = e.pageX, y = e.pageY;
 	console.log("mouseover (x=" + x + ", y=" + y + ")");
 	move_piece(x, y);
 }
 
 function mouseout(e) {
-	var x = e.clientX, y = e.clientY;
+	var x = e.pageX, y = e.pageY;
 	console.log("mouseout (x=" + x + ", y=" + y + ")");
 	move_piece(x, y);
 	dragging = 0;
 }
 
 function mousemove(e) {
-	var x = e.clientX, y = e.clientY;
+	var x = e.pageX, y = e.pageY;
 	console.log("mousemove (x=" + x + ", y=" + y + ")");
 	move_piece(x, y);
 }
 
 function mousedown(e) {
-	var i, x = e.clientX, y = e.clientY;
+	var i, x = e.pageX, y = e.pageY;
 	console.log("mousedown (x=" + x + ", y=" + y + ")");
+	
+	// Determine which piece the user clicked on (if any)
 	for (i = 0; i < piece_count; i++) {
 		var p = pieces[z_order[i]];
 		if (x >= p.x && x < (p.x+p.width) && y >= p.y && y < (p.y+p.height)) {
@@ -168,13 +171,40 @@ function mousedown(e) {
 }
 
 function mouseup(e) {
-	var x = e.clientX, y = e.clientY;
+	var x = e.pageX, y = e.pageY;
 	console.log("mouseup (x=" + x + ", y=" + y + ")");
 	move_piece(x, y);
 	dragging = 0;
+	
+	// If this is a winning move, redirect the player
+	for (i = 0; i < piece_count; i++) {
+		var p = pieces[i];
+		if (Math.abs(p.x - p.goal_x) > 20 || Math.abs(p.y - p.goal_y) > 20)
+			return; // not a winning move
+	}
+	canvas.style.display = 'none';
+	document.getElementById('win').style.display = '';
 }
 
 function run() {
+	params = parse_urls();
+	console.log("img: " + params['img'] + "\n"
+		+ "rows: " + params['rows'] + "\n"
+		+ "cols: " + params['cols'] + "\n");
+	if (typeof params['img'] === 'undefined' || params['img'] == ''
+		|| typeof params['rows'] === 'undefined' || params['rows'] == ''
+		|| typeof params['cols'] === 'undefined' || params['cols'] == '') {
+		var rows = document.getElementById('rows');
+		var cols = document.getElementById('cols');
+		for (i = 2; i <= 20; i++) {
+			rows.innerHTML += '<option value="' + i + '">' + i + '</option>';
+			cols.innerHTML += '<option value="' + i + '">' + i + '</option>';
+		}
+		document.body.style.background = 'url("background.png") no-repeat fixed top left #7ed3f2';
+		document.getElementById('menu').style.display = '';
+		return;
+	}
+
 	window.requestAnimationFrame =
 		window.requestAnimationFrame || window.mozRequestAnimationFrame ||
 		window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
@@ -182,11 +212,6 @@ function run() {
 	canvas = document.getElementById('canvas');
 	canvas.style.display = '';
 	ctx = canvas.getContext('2d');
-
-	params = parse_urls();
-	console.log("img: " + params['img'] + "\n"
-		+ "rows: " + params['rows'] + "\n"
-		+ "cols: " + params['cols'] + "\n");
 
 	rows = params['rows'];
 	cols = params['cols'];
@@ -287,9 +312,26 @@ function run() {
 </script>
 <style>
 html, body {
-	height: 100%;
 	margin: 0;
 	padding: 0;
+	font-family: sans-serif;
+}
+
+input {
+	font-size: 14pt;
+}
+
+h1, h2 {
+	text-align: center;
+	font-weight: normal;
+}
+
+h1 {
+	text-shadow: 4px 4px 8px #fff;
+}
+
+h2 {
+	margin-top: 2em;
 }
 
 #canvas {
@@ -298,11 +340,43 @@ html, body {
 	height: 100%;
 	background: #fff;
 }
+
+form div, select, option {
+	text-align: center;
+	font-size: 14pt;
+}
+
+select, option {
+	font-size: 14pt;
+}
 </style>
 </head>
 <body onload="run();">
 <div>
 <canvas id="canvas" style="display: none"></canvas>
+</div>
+
+<div id="win" style="display: none">
+<div><img src="wincongrats.png" alt="You win. Congrats!" title="You win. Congrats!" /></div>
+<div><button onclick="window.location = 'index.html';">Main Menu</button></div>
+</div>
+
+<div id="menu" style="display: none">
+<header>
+<h1>Puzzle HackTX '15</h1>
+</header>
+<article>
+<a href="https://github.com/you"><img style="position: absolute; top: 0; right: 0; border: 0;"
+	src="https://camo.githubusercontent.com/e7bbb0521b397edbd5fe43e7f760759336b5e05f/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677265656e5f3030373230302e706e67"
+	alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png"></a>
+<form action="index.html" method="GET">
+<h2>Image</h2>
+<div>URL <input type="text" name="img" style="width: 20em;" placeholder="http://" /></div>
+<h2>Dimensions</h2>
+<div><select id="rows" name="rows"></select> &times; <select id="cols" name="cols"></select></div>
+<div style="margin-top: 10em;"><input type="submit" value="Play Now" /></div>
+</form>
+</article>
 </div>
 </body>
 </html>
