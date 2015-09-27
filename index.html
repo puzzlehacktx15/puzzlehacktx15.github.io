@@ -41,7 +41,11 @@ var scale_factor;
 
 var pieces;
 var piece_count;
+
+// an array of indices into pieces; the first element is the index of the
+// nearest piece and the last is of the farthest.
 var z_order;
+
 var image;
 
 function Piece(x, y, width, height, src_x, src_y, src_width, src_height,
@@ -67,31 +71,43 @@ function draw_scene() {
 	canvas.height = window.innerHeight;
 	ctx.fillStyle = '#ffffff';
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
-	for (i = 0; i < piece_count; i++) {
-		var p = pieces[i];
+
+	// Draw from farthest z-order to nearest
+	for (i = piece_count-1; i >=0; i--) {
+		var p = pieces[z_order[i]];
 		ctx.drawImage(image, p.src_x, p.src_y, p.src_width, p.src_height,
 			p.x, p.y, p.width, p.height);
 	}
 }
 
 function mouseover(e) {
-	console.log('mouseover');
+	console.log("mouseover (x=" + e.clientX + ", y=" + e.clientY + ")");
 }
 
 function mouseout(e) {
-	console.log('mouseout');
+	console.log("mouseout (x=" + e.clientX + ", y=" + e.clientY + ")");
 }
 
 function mousemove(e) {
-	console.log('mousemove');
+	console.log("mousemove (x=" + e.clientX + ", y=" + e.clientY + ")");
 }
 
 function mousedown(e) {
-	console.log('mousedown');
+	var i, x, y;
+	x = e.clientX;
+	y = e.clientY;
+	console.log("mousedown (x=" + x + ", y=" + y + ")");
+	for (i = 0; i < piece_count; i++) {
+		var p = pieces[z_order[i]];
+		if (x >= p.x && x < (p.x+p.width) && y >= p.y && y < (p.y+p.height)) {
+			console.log("Clicked piece " + i);
+			return;
+		}
+	}
 }
 
 function mouseup(e) {
-	console.log('mouseup');
+	console.log("mouseup (x=" + e.clientX + ", y=" + e.clientY + ")");
 }
 
 function run() {
@@ -102,9 +118,6 @@ function run() {
 	canvas = document.getElementById('canvas');
 	canvas.style.display = '';
 	ctx = canvas.getContext('2d');
-
-	memcanvas = document.createElement('canvas');
-	memctx = memcanvas.getContext('2d');
 
 	params = parse_urls();
 	console.log("img: " + params['img'] + "\n"
@@ -127,10 +140,10 @@ function run() {
 			scale_factor = canvas_width / this.width;
 		if (scale_factor*this.height > canvas_height)
 			scale_factor = canvas_height / this.height;
-		puzzle_width = scale_factor*this.width;
-		puzzle_height = scale_factor*this.height;
-		puzzle_x = (canvas_width - puzzle_width)/2
-		puzzle_y = (canvas_height - puzzle_height)/2
+		puzzle_width = Math.floor(scale_factor*this.width);
+		puzzle_height = Math.floor(scale_factor*this.height);
+		puzzle_x = Math.floor((canvas_width - puzzle_width)/2);
+		puzzle_y = Math.floor((canvas_height - puzzle_height)/2);
 		console.log("Window width: " + canvas_width + "\n"
 			+ "Window height: " + canvas_height + "\n"
 			+ "Image width: " + this.width + "\n"
@@ -192,6 +205,11 @@ function run() {
 			console.log("z_order[" + i + "] = " + z_order[i]);
 
 		started = 1;
+		canvas.addEventListener("mouseover", mouseover);
+		canvas.addEventListener("mouseout", mouseout);
+		canvas.addEventListener("mousemove", mousemove);
+		canvas.addEventListener("mousedown", mousedown);
+		canvas.addEventListener("mouseup", mouseup);
 		draw_scene();
 	}
 	image.src = params['img'];
@@ -214,9 +232,7 @@ html, body {
 </head>
 <body onload="run();">
 <div>
-<canvas id="canvas" style="display: none" onmouseover="mouseover();"
-	onmouseout="mouseout();" onmousemove="mousemove();"
-	onmousedown="mousedown();" onmouseup="mouseup();"></canvas>
+<canvas id="canvas" style="display: none"></canvas>
 </div>
 </body>
 </html>
