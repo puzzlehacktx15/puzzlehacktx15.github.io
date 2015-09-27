@@ -5,13 +5,32 @@
 <title>Puzzle HackTX 15</title>
 <!-- License: Public domain -->
 <script>
+function clamp(x, min, max) {
+	return Math.min(Math.max(x, min), max);
+}
+
 function shuffle_array(x) {
-	var i;
-	var temp;
+	var i, temp;
 	for (i = 0; i < x.length-1; i++) {
 		j = i + Math.floor(Math.random() * (x.length - i));
 		temp = x[i], x[i] = x[j], x[j] = temp;
 	}
+}
+
+function move_to_front(x, idx) {
+	var i, val;
+	for (i = 0; i < piece_count; i++)
+		console.log("z_order[" + i + "] = " + z_order[i]);
+
+	// shift the first idx elements to the right by 1
+	// and insert this element into the empty space
+	val = x[idx];
+	for (i = idx-1; i >= 0; i--)
+		x[i+1] = x[i];
+	x[0] = val;
+
+	for (i = 0; i < piece_count; i++)
+		console.log("z_order[" + i + "] = " + z_order[i]);
 }
 
 function parse_urls() {
@@ -36,6 +55,9 @@ var rows, cols;
 // x, y, width, and height of the solved puzzle on the canvas (in pixels)
 var puzzle_x, puzzle_y, puzzle_width, puzzle_height;
 
+// maximum accepted x and y values for a piece
+var piece_max_x, piece_max_y;
+
 // factor that the source image's dimensions are scaled by
 var scale_factor;
 
@@ -45,6 +67,12 @@ var piece_count;
 // an array of indices into pieces; the first element is the index of the
 // nearest piece and the last is of the farthest.
 var z_order;
+
+// 1 if the user is dragging a piece (the z_order[0]'th piece), 0 otherwise
+var dragging;
+
+// x, y offsets relative to the dragging piece (z_order[0])
+var drag_x, drag_y;
 
 var image;
 
@@ -65,6 +93,19 @@ function Piece(x, y, width, height, src_x, src_y, src_width, src_height,
 	this.goal_y = goal_y;
 };
 
+function move_piece(x, y) {
+	// Move the currently selected piece given that the mouse coordinates
+	// are now (x, y)
+	var p;
+
+	if (!dragging)
+		return;
+
+	p = pieces[z_order[0]];
+	p.x = clamp(x - drag_x, 0, piece_max_x);
+	p.y = clamp(y - drag_y, 0, piece_max_y);
+}
+
 function draw_scene() {
 	window.requestAnimationFrame(draw_scene);
 	canvas.width = window.innerWidth;
@@ -81,33 +122,45 @@ function draw_scene() {
 }
 
 function mouseover(e) {
-	console.log("mouseover (x=" + e.clientX + ", y=" + e.clientY + ")");
+	var x = e.clientX, y = e.clientY;
+	console.log("mouseover (x=" + x + ", y=" + y + ")");
+	move_piece(x, y);
 }
 
 function mouseout(e) {
-	console.log("mouseout (x=" + e.clientX + ", y=" + e.clientY + ")");
+	var x = e.clientX, y = e.clientY;
+	console.log("mouseout (x=" + x + ", y=" + y + ")");
+	move_piece(x, y);
+	dragging = 0;
 }
 
 function mousemove(e) {
-	console.log("mousemove (x=" + e.clientX + ", y=" + e.clientY + ")");
+	var x = e.clientX, y = e.clientY;
+	console.log("mousemove (x=" + x + ", y=" + y + ")");
+	move_piece(x, y);
 }
 
 function mousedown(e) {
-	var i, x, y;
-	x = e.clientX;
-	y = e.clientY;
+	var i, x = e.clientX, y = e.clientY;
 	console.log("mousedown (x=" + x + ", y=" + y + ")");
 	for (i = 0; i < piece_count; i++) {
 		var p = pieces[z_order[i]];
 		if (x >= p.x && x < (p.x+p.width) && y >= p.y && y < (p.y+p.height)) {
-			console.log("Clicked piece " + i);
+			console.log("Clicked piece " + z_order[i] + " (z-order " + i + ")");
+			move_to_front(z_order, i);
+			dragging = 1;
+			drag_x = x - p.x;
+			drag_y = y - p.y;
 			return;
 		}
 	}
 }
 
 function mouseup(e) {
-	console.log("mouseup (x=" + e.clientX + ", y=" + e.clientY + ")");
+	var x = e.clientX, y = e.clientY;
+	console.log("mouseup (x=" + x + ", y=" + y + ")");
+	move_piece(x, y);
+	dragging = 0;
 }
 
 function run() {
@@ -144,6 +197,8 @@ function run() {
 		puzzle_height = Math.floor(scale_factor*this.height);
 		puzzle_x = Math.floor((canvas_width - puzzle_width)/2);
 		puzzle_y = Math.floor((canvas_height - puzzle_height)/2);
+		piece_max_x = canvas_width - Math.ceil(puzzle_width/cols);
+		piece_max_y = canvas_height - Math.ceil(puzzle_height/rows);
 		console.log("Window width: " + canvas_width + "\n"
 			+ "Window height: " + canvas_height + "\n"
 			+ "Image width: " + this.width + "\n"
@@ -152,7 +207,9 @@ function run() {
 			+ "Puzzle x: " + puzzle_x + "\n"
 			+ "Puzzle y: " + puzzle_y + "\n"
 			+ "Puzzle width: " + puzzle_width + "\n"
-			+ "Puzzle height: " + puzzle_height + "\n");
+			+ "Puzzle height: " + puzzle_height + "\n"
+			+ "Max piece x: " + piece_max_x + "\n"
+			+ "Max piece y: " + piece_max_y);
 
 		pieces = [];
 		n = 0;
@@ -168,10 +225,8 @@ function run() {
 				src_x = Math.floor(j*this.width/cols);
 				src_width = Math.floor((j+1)*this.width/cols) - src_x;
 
-				rand_x = Math.floor(Math.random()*
-					(canvas_width-Math.ceil(puzzle_width/cols)));
-				rand_y = Math.floor(Math.random()*
-					(canvas_height-Math.ceil(puzzle_height/rows)));
+				rand_x = Math.floor(Math.random()*piece_max_x);
+				rand_y = Math.floor(Math.random()*piece_max_y);
 
 				pieces.push(new Piece(
 					rand_x, rand_y,
@@ -203,6 +258,10 @@ function run() {
 
 		for (i = 0; i < piece_count; i++)
 			console.log("z_order[" + i + "] = " + z_order[i]);
+
+		dragging = 0;
+		drag_x = 0;
+		drag_y = 0;
 
 		started = 1;
 		canvas.addEventListener("mouseover", mouseover);
