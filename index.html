@@ -20,15 +20,48 @@ function parse_urls() {
 
 var canvas;
 var ctx;
+
+var rows, cols;
+
+// x, y, width, and height of the solved puzzle on the canvas (in pixels)
+var puzzle_x, puzzle_y, puzzle_width, puzzle_height;
+
+// factor that the source image's dimensions are scaled by
+var scale_factor;
+
+var pieces;
 var image;
+
+function Piece(x, y, width, height, src_x, src_y, src_width, src_height,
+	goal_x, goal_y) {
+	// x and y are the only variables that change during gameplay;
+	// the rest are precalculated values initialized in run()
+	// (or more specifically, image.onload())
+	this.x = x;
+	this.y = y;
+	this.width = width;
+	this.height = height;
+	this.src_x = src_x;
+	this.src_y = src_y;
+	this.src_width = src_width;
+	this.src_height = src_height;
+	this.goal_x = goal_x;
+	this.goal_y = goal_y;
+};
 
 function draw_scene() {
 	window.requestAnimationFrame(draw_scene);
-	canvas.width  = window.innerWidth;
+	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;
-	ctx.fillStyle = '#000000';
+	ctx.fillStyle = '#ffffff';
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
-	ctx.drawImage(image, 20+10*Math.sin(2*Math.PI*Date.now()/1000), 10);
+	for (i = 0; i < rows; i++) {
+		for (j = 0; j < cols; j++) {
+			var p = pieces[i][j];
+			ctx.drawImage(image, p.src_x, p.src_y, p.src_width, p.src_height,
+				p.x, p.y, p.width, p.height);
+		}
+	}
 }
 
 function run() {
@@ -40,16 +73,79 @@ function run() {
 	canvas.style.display = '';
 	ctx = canvas.getContext('2d');
 
+	memcanvas = document.createElement('canvas');
+	memctx = memcanvas.getContext('2d');
+
 	params = parse_urls();
-	alert("img: " + params['img'] + "\n"
+	console.log("img: " + params['img'] + "\n"
 		+ "rows: " + params['rows'] + "\n"
-		+ "cols: " + params['cols'] + "\n"
-		+ "mode: " + params['mode'] + "\n"
-		+ "timer: " + params['timer']);
+		+ "cols: " + params['cols'] + "\n");
+
+	rows = params['rows'];
+	cols = params['cols'];
 
 	image = new Image();
 	image.onload = function() {
-		alert('Loaded');
+		var canvas_width = window.innerWidth;
+		var canvas_height = window.innerHeight;
+		var i, j;
+		var x, y, width, height, src_x, src_y, src_width, src_height;
+		var p;
+
+		scale_factor = 1;
+		if (scale_factor*this.width > canvas_width)
+			scale_factor = canvas_width / this.width;
+		if (scale_factor*this.height > canvas_height)
+			scale_factor = canvas_height / this.height;
+		puzzle_width = scale_factor*this.width;
+		puzzle_height = scale_factor*this.height;
+		puzzle_x = (canvas_width - puzzle_width)/2
+		puzzle_y = (canvas_height - puzzle_height)/2
+		console.log("Window width: " + canvas_width + "\n"
+			+ "Window height: " + canvas_height + "\n"
+			+ "Image width: " + this.width + "\n"
+			+ "Image height: " + this.height + "\n"
+			+ "Scale factor: " + scale_factor + "\n"
+			+ "Puzzle x: " + puzzle_x + "\n"
+			+ "Puzzle y: " + puzzle_y + "\n"
+			+ "Puzzle width: " + puzzle_width + "\n"
+			+ "Puzzle height: " + puzzle_height + "\n");
+
+		pieces = new Array(rows);
+		for (i = 0; i < rows; i++) {
+			y = Math.floor(i*puzzle_height/rows);
+			height = Math.floor((i+1)*puzzle_height/rows) - y;
+			src_y = Math.floor(i*this.height/rows);
+			src_height = Math.floor((i+1)*this.height/rows) - src_y;
+
+			pieces[i] = new Array(cols);
+			for (j = 0; j < cols; j++) {
+				x = Math.floor(j*puzzle_width/cols);
+				width = Math.floor((j+1)*puzzle_width/cols) - x;
+				src_x = Math.floor(j*this.width/cols);
+				src_width = Math.floor((j+1)*this.width/cols) - src_x;
+				
+				pieces[i][j] = new Piece(
+					puzzle_x+x, puzzle_y+y,
+					width, height,
+					src_x, src_y,
+					src_width, src_height,
+					puzzle_x+x, puzzle_y+y);
+				p = pieces[i][j];
+				console.log("puzzle[" + i + "][" + j + "]:\n"
+					+ "x: " + p.x + "\n"
+					+ "y: " + p.y + "\n"
+					+ "width: " + p.width + "\n"
+					+ "height: " + p.height + "\n"
+					+ "src_x: " + p.src_x + "\n"
+					+ "src_y: " + p.src_y + "\n"
+					+ "src_width: " + p.src_width + "\n"
+					+ "src_height: " + p.src_height + "\n"
+					+ "goal_x: " + p.goal_x + "\n"
+					+ "goal_y: " + p.goal_y + "\n");
+			}
+		}
+
 		draw_scene();
 	}
 	image.src = params['img'];
