@@ -5,10 +5,19 @@
 <title>Puzzle HackTX 15</title>
 <!-- License: Public domain -->
 <script>
+function shuffle_array(x) {
+	var i;
+	var temp;
+	for (i = 0; i < x.length-1; i++) {
+		j = i + Math.floor(Math.random() * (x.length - i));
+		temp = x[i], x[i] = x[j], x[j] = temp;
+	}
+}
+
 function parse_urls() {
 	var params = {},
 		match,
-		pl     = /\+/g, // Regex for replacing addition symbol with a space
+		pl     = /\+/g,
 		search = /([^&=]+)=?([^&]*)/g,
 		decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
 		query  = window.location.search.substring(1);
@@ -18,6 +27,7 @@ function parse_urls() {
 	return params;
 }
 
+var started = 0;
 var canvas;
 var ctx;
 
@@ -31,11 +41,12 @@ var scale_factor;
 
 var pieces;
 var piece_count;
+var z_order;
 var image;
 
 function Piece(x, y, width, height, src_x, src_y, src_width, src_height,
 	goal_x, goal_y) {
-	// x and y are the only variables that change during gameplay;
+	// x, y, and z are the only variables that change during gameplay;
 	// the rest are precalculated values initialized in run()
 	// (or more specifically, image.onload())
 	this.x = x;
@@ -63,6 +74,26 @@ function draw_scene() {
 	}
 }
 
+function mouseover(e) {
+	console.log('mouseover');
+}
+
+function mouseout(e) {
+	console.log('mouseout');
+}
+
+function mousemove(e) {
+	console.log('mousemove');
+}
+
+function mousedown(e) {
+	console.log('mousedown');
+}
+
+function mouseup(e) {
+	console.log('mouseup');
+}
+
 function run() {
 	window.requestAnimationFrame =
 		window.requestAnimationFrame || window.mozRequestAnimationFrame ||
@@ -88,7 +119,7 @@ function run() {
 		var canvas_width = window.innerWidth;
 		var canvas_height = window.innerHeight;
 		var i, j, n;
-		var x, y, width, height, src_x, src_y, src_width, src_height;
+		var x, y, width, height, src_x, src_y, src_width, src_height, rand_x, rand_y;
 		var p;
 
 		scale_factor = 1;
@@ -123,9 +154,14 @@ function run() {
 				width = Math.floor((j+1)*puzzle_width/cols) - x;
 				src_x = Math.floor(j*this.width/cols);
 				src_width = Math.floor((j+1)*this.width/cols) - src_x;
-				
+
+				rand_x = Math.floor(Math.random()*
+					(canvas_width-Math.ceil(puzzle_width/cols)));
+				rand_y = Math.floor(Math.random()*
+					(canvas_height-Math.ceil(puzzle_height/rows)));
+
 				pieces.push(new Piece(
-					puzzle_x+x, puzzle_y+y,
+					rand_x, rand_y,
 					width, height,
 					src_x, src_y,
 					src_width, src_height,
@@ -147,6 +183,15 @@ function run() {
 		}
 		piece_count = rows*cols;
 
+		z_order = [];
+		for (i = 0; i < piece_count; i++)
+			z_order[i] = i;
+		shuffle_array(z_order);
+
+		for (i = 0; i < piece_count; i++)
+			console.log("z_order[" + i + "] = " + z_order[i]);
+
+		started = 1;
 		draw_scene();
 	}
 	image.src = params['img'];
@@ -163,13 +208,15 @@ html, body {
 	position: absolute;
 	width: 100%;
 	height: 100%;
-	background: #000;
+	background: #fff;
 }
 </style>
 </head>
 <body onload="run();">
 <div>
-<canvas id="canvas" style="display: none"></canvas>
+<canvas id="canvas" style="display: none" onmouseover="mouseover();"
+	onmouseout="mouseout();" onmousemove="mousemove();"
+	onmousedown="mousedown();" onmouseup="mouseup();"></canvas>
 </div>
 </body>
 </html>
