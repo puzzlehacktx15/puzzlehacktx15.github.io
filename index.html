@@ -2,6 +2,7 @@
 <html lang="en-US">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="user-scalable=no"/>
 <title>Puzzle HackTX 15</title>
 <!-- License: Public domain -->
 <script>
@@ -113,12 +114,22 @@ function draw_scene() {
 	ctx.fillStyle = '#ffffff';
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+	ctx.strokeStyle = "#a0a0a0";
+	ctx.strokeRect(puzzle_x, puzzle_y, puzzle_width, puzzle_height);
+
 	// Draw from farthest z-order to nearest
 	for (i = piece_count-1; i >=0; i--) {
 		var p = pieces[z_order[i]];
+		if (i == 0) {
+			// Light up the nearest piece
+			ctx.shadowBlur = 20;
+			ctx.shadowColor = '#00ffff';
+		}
 		ctx.drawImage(image, p.src_x, p.src_y, p.src_width, p.src_height,
 			p.x, p.y, p.width, p.height);
 	}
+	ctx.shadowBlur = 0;
+	ctx.shadowColor = '';
 }
 
 function mouseover(e) {
