@@ -3,17 +3,18 @@
 <head>
 <meta charset="UTF-8" />
 <title>Puzzle HackTX 15</title>
+<!-- License: Public domain -->
 <script>
 function parse_urls() {
-    var params = {},
+	var params = {},
 		match,
-        pl     = /\+/g, // Regex for replacing addition symbol with a space
-        search = /([^&=]+)=?([^&]*)/g,
-        decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
-        query  = window.location.search.substring(1);
+		pl     = /\+/g, // Regex for replacing addition symbol with a space
+		search = /([^&=]+)=?([^&]*)/g,
+		decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
+		query  = window.location.search.substring(1);
 
-    while (match = search.exec(query))
-       params[decode(match[1])] = decode(match[2]);
+	while (match = search.exec(query))
+		params[decode(match[1])] = decode(match[2]);
 	return params;
 }
 
@@ -36,19 +37,22 @@ function run() {
 		window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 
 	canvas = document.getElementById('canvas');
+	canvas.style.display = '';
 	ctx = canvas.getContext('2d');
 
 	params = parse_urls();
-	if (typeof params['img'] !== 'undefined') {
-		alert('img: ' + params['img']);
-	}
+	alert("img: " + params['img'] + "\n"
+		+ "rows: " + params['rows'] + "\n"
+		+ "cols: " + params['cols'] + "\n"
+		+ "mode: " + params['mode'] + "\n"
+		+ "timer: " + params['timer']);
 
 	image = new Image();
 	image.onload = function() {
 		alert('Loaded');
 		draw_scene();
 	}
-	image.src = 'example.png';
+	image.src = params['img'];
 }
 </script>
 <style>
@@ -68,7 +72,7 @@ html, body {
 </head>
 <body onload="run();">
 <div>
-<canvas id="canvas"></canvas>
+<canvas id="canvas" style="display: none"></canvas>
 </div>
 </body>
 </html>
